@@ -1,7 +1,8 @@
 import { randomBytes } from "crypto";
 import { z } from "zod";
-import { desc, eq } from "drizzle-orm";
-import { publicProcedure, router } from "@/server/trpc";
+import { and, desc, eq } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+import { protectedProcedure, router } from "@/server/trpc";
 import { db } from "@/server/db";
 import { deployments, type NewDeployment } from "@/server/db/schema";
 import { runDeploy } from "@/server/deploy";
@@ -42,20 +43,23 @@ const createInput = z.object({
 });
 
 export const deploymentsRouter = router({
-  list: publicProcedure.query(() => {
+  list: protectedProcedure.query(({ ctx }) => {
+    // Multi-tenant: cada usuario ve SOLO sus deployments.
     return db
       .select()
       .from(deployments)
+      .where(eq(deployments.userId, ctx.session.user.id))
       .orderBy(desc(deployments.createdAt))
       .all();
   }),
 
-  create: publicProcedure.input(createInput).mutation(({ input }) => {
+  create: protectedProcedure.input(createInput).mutation(({ input, ctx }) => {
     const id = generateId();
     const subdomain = `app-${id}.127.0.0.1.sslip.io`;
 
     const row: NewDeployment = {
       id,
+      userId: ctx.session.user.id, // estampamos el dueno
       repoUrl: input.repoUrl,
       dockerfilePath: input.dockerfilePath,
       port: input.port,
@@ -72,9 +76,23 @@ export const deploymentsRouter = router({
     return db.select().from(deployments).where(eq(deployments.id, id)).get();
   }),
 
-  redeploy: publicProcedure
+  redeploy: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(({ input }) => {
+    .mutation(({ input, ctx }) => {
+      // Ownership: buscamos el deployment scopeado al usuario. Si no aparece,
+      // NOT_FOUND (no FORBIDDEN) para no filtrar que el id existe pero es de otro.
+      const dep = db
+        .select()
+        .from(deployments)
+        .where(
+          and(
+            eq(deployments.id, input.id),
+            eq(deployments.userId, ctx.session.user.id),
+          ),
+        )
+        .get();
+      if (!dep) throw new TRPCError({ code: "NOT_FOUND" });
+
       // Reset visible inmediato, luego runDeploy (idempotente) en background.
       db.update(deployments)
         .set({ status: "queued", error: null })
@@ -86,16 +104,22 @@ export const deploymentsRouter = router({
       return db.select().from(deployments).where(eq(deployments.id, input.id)).get();
     }),
 
-  remove: publicProcedure
+  remove: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const dep = db
         .select()
         .from(deployments)
-        .where(eq(deployments.id, input.id))
+        .where(
+          and(
+            eq(deployments.id, input.id),
+            eq(deployments.userId, ctx.session.user.id),
+          ),
+        )
         .get();
+      if (!dep) throw new TRPCError({ code: "NOT_FOUND" });
 
-      if (dep?.serviceName) {
+      if (dep.serviceName) {
         await removeService(dep.serviceName);
       }
       db.delete(deployments).where(eq(deployments.id, input.id)).run();
