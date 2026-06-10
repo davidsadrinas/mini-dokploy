@@ -130,26 +130,35 @@ UI, and resource limits per service.
 
 ## How I used AI tools (and where I didn't)
 
-I worked with an AI assistant in two phases. First, I shaped an **interactive plan** together —
-splitting the project into milestones (orchestration, persistence, Docker integration, routing,
-one-command stack, live logs, auth) and agreeing on the approach and tradeoffs before writing any
-code. Then I worked through that plan **point by point**: at each step I wrote and reviewed the
-code and asked *why* until I understood it, only moving on once I could explain that piece in my
-own words — repeating that loop until I reached the final result. If I couldn't defend a line, it
-didn't ship.
+I used an AI assistant the way I'd use a strong pair programmer: I owned the plan and every
+decision, and used it for leverage where it's genuinely faster.
 
-**Where AI helped:**
-- Explaining the *why* behind concepts I was learning (Swarm reconciliation, Traefik's
-  service-level labels gotcha, why `globalThis` is needed for the in-process log bus, authn vs
-  authz, why `NOT_FOUND` beats `FORBIDDEN`).
-- Boilerplate wiring I understand but didn't want to retype (tRPC client/server setup).
-- Reviewing my code and catching edge cases (e.g. trimming the repo URL so a pasted trailing
-  space doesn't break `git clone`).
+**The process.** Before writing any code I split the brief into milestones (orchestration,
+persistence, Docker integration, routing, one-command stack, live logs, auth) and pressure-tested
+the approach for each one. Then I executed milestone by milestone: write, review, ask *why* until
+I could explain the piece in my own words, test it by hand, move on. The rule was simple: if I
+couldn't defend a line in an interview, it didn't ship.
 
-**Where I didn't:**
-- I didn't let it scaffold the whole app upfront. Every file was added deliberately, milestone by
-  milestone, so the structure stays explainable.
-- The architecture decisions (Swarm over K8s, idempotent bootstrap, async deploy, ownership-based
-  multi-tenancy) are mine — I can defend each tradeoff and what I'd change for production.
-- I verified behavior by hand (two accounts not seeing each other's deployments, a failing build
-  landing in `error` with the message visible), not by trusting generated code.
+**Where AI made me faster:**
+- Compressing the learning curve on sharp edges: why Traefik's swarm provider only reads
+  *service-level* labels (container labels are silently ignored), how Swarm reconciles desired
+  state, why the log bus needs `globalThis` so the build emitter and the WebSocket listeners
+  share one instance, and why `NOT_FOUND` beats `FORBIDDEN` for cross-tenant probes.
+- Boilerplate I've written before and didn't want to retype: tRPC client/server wiring, the
+  Better Auth table schema.
+- A second pair of eyes on my code: it caught that a pasted repo URL with a trailing space
+  breaks `git clone` — input is now trimmed before validation.
+
+**Where I kept it out of the loop:**
+- No "scaffold the whole app" prompt. Every file exists because a milestone needed it; I can
+  walk the tree and justify each one.
+- The decisions that matter are mine: Swarm services over plain containers, the async deploy
+  state machine (create returns immediately, UI polls + streams), idempotent bootstrap instead
+  of migrations (and what that trades away), and generated Traefik labels winning over custom
+  ones so a tenant can't hijack routing.
+- Verification was manual, not vibes: two accounts can't see each other's deployments, a failing
+  build lands in `error` with the message surfaced in the UI, redeploy replaces the running
+  service, and the stack refuses to start without a real session secret.
+
+The honest summary: AI compressed the learning curve and typed the boring parts. The
+architecture, the tradeoffs, and the responsibility for what shipped are mine.
