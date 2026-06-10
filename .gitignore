@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# sqlite (estado local)
+data.db
+data.db-*
+
+# notas internas / plan — no van al repo público
+_notas/
