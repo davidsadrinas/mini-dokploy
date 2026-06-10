@@ -4,6 +4,9 @@ export type DeploymentStatus = "queued" | "building" | "running" | "error";
 
 export const deployments = sqliteTable("deployments", {
   id: text("id").primaryKey(),
+  // Dueño del deployment. El scoping multi-tenant cuelga de esta columna:
+  // list filtra por aca y redeploy/remove verifican ownership contra ella.
+  userId: text("user_id").notNull(),
   repoUrl: text("repo_url").notNull(),
   dockerfilePath: text("dockerfile_path").notNull(),
   port: integer("port").notNull(),

@@ -44,5 +44,8 @@ next-env.d.ts
 data.db
 data.db-*
 
-# notas internas / plan — no van al repo público
+# secreto de Better Auth (generado por up.sh, nunca commitear)
+.better-auth-secret
+
+# notas internas / plan / AI config — no van al repo público
 _notas/

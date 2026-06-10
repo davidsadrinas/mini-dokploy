@@ -24,6 +24,12 @@ services:
     image: mini-dokploy:latest
     environment:
       - DATABASE_PATH=/app/data/data.db
+      # Secreto que firma las sesiones. Viene del entorno (up.sh lo genera y
+      # persiste fuera de git). El :? hace fallar el deploy si falta, en vez de
+      # caer al fallback inseguro de dev.
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:?falta BETTER_AUTH_SECRET (corré npm run up)}
+      # Origin real del panel, para los checks de origin/cookies de Better Auth.
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-http://dokploy.127.0.0.1.sslip.io}
     volumes:
       # Socket RW: el panel crea services hablando con el daemon del host.
       - /var/run/docker.sock:/var/run/docker.sock
