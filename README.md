@@ -130,10 +130,13 @@ UI, and resource limits per service.
 
 ## How I used AI tools (and where I didn't)
 
-I used an AI assistant as a **pair-programmer and tutor**, not an autopilot. The project was built
-one milestone at a time under an explicit rule set: explain the concept before writing code, keep
-diffs small and readable, and **stop at every checkpoint** so I could re-explain the piece in my
-own words before moving on. If I couldn't defend a line, it didn't ship.
+I worked with an AI assistant in two phases. First, I shaped an **interactive plan** together —
+splitting the project into milestones (orchestration, persistence, Docker integration, routing,
+one-command stack, live logs, auth) and agreeing on the approach and tradeoffs before writing any
+code. Then I worked through that plan **point by point**: at each step I wrote and reviewed the
+code and asked *why* until I understood it, only moving on once I could explain that piece in my
+own words — repeating that loop until I reached the final result. If I couldn't defend a line, it
+didn't ship.
 
 **Where AI helped:**
 - Explaining the *why* behind concepts I was learning (Swarm reconciliation, Traefik's
