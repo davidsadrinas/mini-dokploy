@@ -101,7 +101,9 @@ the DB **and** pushed to an in-process event bus, which a WebSocket streams to t
 **Auth / multi-tenancy.** Better Auth resolves the session in the tRPC context on every request
 (authn). `protectedProcedure` gates on a valid session; every query is scoped by `userId`
 (ownership). Cross-tenant access returns `NOT_FOUND`, never `FORBIDDEN`, so an attacker can't
-enumerate which deployments exist. This is the bonus that maps directly to a real PaaS failure
+enumerate which deployments exist. The live-log WebSocket runs the same guard at upgrade time
+(session from cookies + ownership of the deployment), so logs can't be streamed cross-tenant
+either. This is the bonus that maps directly to a real PaaS failure
 mode: one team seeing another team's preview deployments (and their env/secrets).
 
 **Why Docker Swarm** (not `docker run` / not plain compose): the brief asks for "Docker services."
