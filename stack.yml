@@ -1,0 +1,53 @@
+version: "3.8"
+
+services:
+  traefik:
+    image: traefik:v3.3
+    command:
+      - --providers.swarm=true
+      - --providers.swarm.exposedByDefault=false
+      - --providers.swarm.network=mini-dokploy-net
+      - --entrypoints.web.address=:80
+    ports:
+      # Configurable: HTTP_PORT=8090 npm run up (default 80)
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - mini-dokploy-net
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
+  app:
+    image: mini-dokploy:latest
+    environment:
+      - DATABASE_PATH=/app/data/data.db
+    volumes:
+      # Socket RW: el panel crea services hablando con el daemon del host.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Volumen persistente para el estado SQLite (sobrevive a redeploys).
+      - mini-dokploy-data:/app/data
+    networks:
+      - mini-dokploy-net
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      # Labels a NIVEL service (en un stack van bajo deploy.labels).
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.dokploy.rule=Host(`dokploy.127.0.0.1.sslip.io`)
+        - traefik.http.routers.dokploy.entrypoints=web
+        - traefik.http.services.dokploy.loadbalancer.server.port=3000
+        - traefik.swarm.network=mini-dokploy-net
+
+networks:
+  # external = la creamos antes (up.sh) con un nombre fijo, asi Traefik y las
+  # apps de usuario comparten exactamente la misma red.
+  mini-dokploy-net:
+    external: true
+
+volumes:
+  mini-dokploy-data:

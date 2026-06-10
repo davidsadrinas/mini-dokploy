@@ -3,19 +3,41 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "tsx server.ts",
     "build": "next build",
-    "start": "next start"
+    "start": "NODE_ENV=production tsx server.ts",
+    "up": "bash scripts/up.sh",
+    "down": "bash scripts/down.sh"
   },
   "dependencies": {
+    "@better-auth/drizzle-adapter": "^1.6.15",
+    "@tanstack/react-query": "^5.101.0",
+    "@trpc/client": "^11.17.0",
+    "@trpc/react-query": "^11.17.0",
+    "@trpc/server": "^11.17.0",
+    "better-auth": "^1.6.15",
+    "better-sqlite3": "^12.10.0",
+    "dockerode": "^5.0.0",
+    "drizzle-orm": "^0.45.2",
     "next": "16.2.7",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "simple-git": "^3.36.0",
+    "superjson": "^2.2.6",
+    "tar-fs": "^3.1.2",
+    "tsx": "^4.22.4",
+    "ws": "^8.21.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/dockerode": "^4.0.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/tar-fs": "^2.0.4",
+    "@types/ws": "^8.18.1",
+    "drizzle-kit": "^0.31.10",
     "typescript": "^5"
   }
 }
