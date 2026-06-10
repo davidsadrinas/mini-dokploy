@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import Head from "next/head";
 import { trpc } from "@/utils/trpc";
+import { signOut, useSession } from "@/utils/auth-client";
 import { LogStream } from "@/components/LogStream";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -13,9 +15,22 @@ const STATUS_COLORS: Record<string, string> = {
 type LabelRow = { key: string; value: string };
 
 export default function Home() {
+  const router = useRouter();
+  const { data: session, isPending } = useSession();
+
+  // Gate de UX (NO de seguridad: el server ya corta con UNAUTHORIZED). Si no hay
+  // sesion una vez resuelta, mandamos a /login para no mostrar una pantalla rota.
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.replace("/login");
+    }
+  }, [isPending, session, router]);
+
   const utils = trpc.useUtils();
 
   const list = trpc.deployments.list.useQuery(undefined, {
+    // Solo consultamos con sesion: sin ella el server respondería UNAUTHORIZED.
+    enabled: !!session,
     // Polling: mientras algo este en queued/building, refrescamos cada 1.5s.
     refetchInterval: (query) => {
       const pending = query.state.data?.some(
@@ -58,13 +73,31 @@ export default function Home() {
     });
   }
 
+  // Mientras Better Auth resuelve la sesion (o si no hay y estamos por redirigir),
+  // no renderizamos el panel.
+  if (isPending || !session) {
+    return (
+      <main style={{ fontFamily: "system-ui", padding: "2rem" }}>
+        <p>Cargando...</p>
+      </main>
+    );
+  }
+
   return (
     <>
       <Head>
         <title>Mini-Dokploy</title>
       </Head>
       <main style={{ fontFamily: "system-ui", padding: "2rem", maxWidth: 760, margin: "0 auto" }}>
-        <h1>Mini-Dokploy</h1>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h1>Mini-Dokploy</h1>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13 }}>
+            <span style={{ color: "#666" }}>{session.user.email}</span>
+            <button type="button" onClick={() => signOut().then(() => router.replace("/login"))}>
+              Logout
+            </button>
+          </div>
+        </div>
 
         <form onSubmit={handleSubmit} style={{ display: "grid", gap: "0.75rem", marginBottom: "2rem" }}>
           <label style={{ display: "grid", gap: 4 }}>
